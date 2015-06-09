@@ -1,0 +1,83 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+binmode( STDIN, ":utf8" );
+binmode( STDOUT, ":utf8" );
+
+my $existing = {};
+my $links = {};
+
+my $skip = 0;
+my $istext = 0;
+my $ignore_page = 0;
+
+my $current_links = {};
+
+while( <> ) {
+    if( !$istext ) {
+        if( /^\s*<title>(.*?)<\/title>/ ) {
+            $existing->{$1} = 1;
+            $ignore_page = ($1 =~ /^MediaWiki:/ ? 1 : 0);
+        } elsif( /^\s*<text xml:space="preserve">/ ) {
+            $istext = 1;
+            $skip = 0;
+            $current_links = {};
+        }
+    }
+    if( /<\/text>\s*$/ ) {
+        foreach( keys %$current_links ) {
+            $links->{$_} = 0 if !exists $links->{$_};
+            $links->{$_} ++;
+        }
+        $istext = 0;
+    }
+    next if !$istext || $ignore_page;
+    if( /^&lt;!--/ ) {
+        $skip = 1;
+    }
+    if( /--&gt;/ ) {
+        $skip = 0;
+    }
+    next if $skip;
+    while( /\[\[(.*?)\]\]/g ) {
+        my( $link ) = split( /\|/, $1 );
+        next if !defined $link;
+        $link = ucfirst( $link );
+        next if $link =~ /^:?w:/i;
+        next if $link =~ /^:m(eta)?:/;               # Meta
+        next if $link =~ /^:wikispecies:/;           # Wikispecies
+        next if $link =~ /^:?(en|de|ca|nv|es|cs):/i; # Other languages
+        next if $link =~ /^D:/; # Links to Wiki data project?
+        next if $link =~ /^#/;  # Relative links
+        next if $link =~ /^{{{[^}]+(}}})?$/;         # Template parameters
+        next if $link =~ /^(User:)?{{[^}]+}}$/; # Some other templates
+        next if $link =~ /^M:(User|Special):/;
+        next if $link =~ /^:?(Vaizdas|Image|Special|File|Template|Specialus|Wikt):/;
+        next if $link =~ /,replace\(|g\.cat_tree/;   # Some scripts
+        next if $link eq "";
+        $link =~ s/#[^#]*$//;
+        $link =~ s/_/ /g;
+        $link =~ s/^User:/Naudotojas:/;
+        $link =~ s/^User talk:/Naudotojo aptarimas:/;
+        $link =~ s/^Category:/Kategorija:/;
+        $link =~ s/^(Project|Wikipedia|WikiPedia):/Vikipedija:/;
+        $link =~ s/^://;
+        if( $link =~ /^(Naudotojas|Naudotojo aptarimas|Kategorija|Vikipedija):\s*(.*)/ ) {
+            $link = "$1:" . ucfirst( $2 );
+        }
+        $current_links->{$link} = 1;
+    }
+}
+
+foreach( keys %$existing ) {
+    delete $links->{$_} if exists $links->{$_};
+}
+
+my $limit = 1000;
+foreach( reverse sort {$links->{$a} <=> $links->{$b}} keys %$links ) {
+    print "{{StatTrok|$_|" . $links->{$_} . "}}\n";
+    $limit --;
+    last if $limit <= 0;
+}
