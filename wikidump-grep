@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+binmode( STDIN, ":utf8" );
+binmode( STDOUT, ":utf8" );
+
+my $pattern = shift @ARGV;
+
+my $skip = 0;
+my $istext = 0;
+my $ignore_page = 0;
+
+my $title;
+
+while( <> ) {
+    if( !$istext ) {
+        if( /^\s*<title>(.*?)<\/title>/ ) {
+            $title = $1;
+        } elsif( s/^\s*<text xml:space="preserve">// ) {
+            $istext = 1;
+        }
+    }
+    print "$title\t$_" if $istext && /$pattern/;
+    if( /<\/text>\s*$/ ) {
+        $istext = 0;
+    }
+}
