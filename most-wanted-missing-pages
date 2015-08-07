@@ -46,15 +46,15 @@ while( <> ) {
         next if !defined $link;
         $link = ucfirst( $link );
         next if $link =~ /^:?w:/i;
-        next if $link =~ /^:m(eta)?:/;               # Meta
+        next if $link =~ /^:m(eta)?:/i;              # Meta
         next if $link =~ /^:wikispecies:/;           # Wikispecies
         next if $link =~ /^:?(en|de|ca|nv|es|cs):/i; # Other languages
         next if $link =~ /^D:/; # Links to Wiki data project?
         next if $link =~ /^#/;  # Relative links
         next if $link =~ /^{{{[^}]+(}}})?$/;         # Template parameters
         next if $link =~ /^(User:)?{{[^}]+}}$/; # Some other templates
-        next if $link =~ /^M:(User|Special):/;
-        next if $link =~ /^:?(Vaizdas|Image|Special|File|Template|Specialus|Wikt):/;
+        next if $link =~ /^M:(User|User talk|Special):/i;
+        next if $link =~ /^:?(Vaizdas|Image|Special|File|Template|Specialus|Naudotojas|Wikt):/;
         next if $link =~ /,replace\(|g\.cat_tree/;   # Some scripts
         next if $link eq "";
         $link =~ s/#[^#]*$//;
