@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Encode;
+
+binmode( STDIN, ":utf8" );
+binmode( STDOUT, ":utf8" );
+
+my @lines = <>;
+
+my $locatives = {
+    kaimas => 'kaimą',
+    miestelis => 'miestelį',
+    miestas => 'miestą',
+};
+
+my $region;
+foreach( @lines ) {
+    if( /^'''\S+'''.+(kaimas|miestelis|miestas).(\S+ rajone)/ ) {
+        $region = decode( 'UTF-8', $locatives->{$1} ) . " " . $2;
+        last;
+    }
+    if( /^'''\S+'''.+(kaimas|miestelis|miestas).\[\[\S+ \S+\|(\S+ rajone)/ ) {
+        $region = decode( 'UTF-8', $locatives->{$1} ) . " " . $2;
+        last;
+    }
+}
+
+foreach( @lines ) {
+    if( $region ) {
+        s/^\s*:+\s*'+\s*Apie (kaim. \S+ rajone) .r\. (\[\[[^\]]+\]\])'+\.?(\n?)$/{{otheruse|$region|$1|$2}}$3/;
+    }
+    print $_;
+}
